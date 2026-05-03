@@ -52,6 +52,8 @@ const onLocaleChange = (event: Event) => {
     <footer class="app-footer">
       <p>© {{ new Date().getFullYear() }} {{ t('layout.footer') }}</p>
     </footer>
+    <AppToastStack />
+    <AppConfirmDialog />
   </div>
 </template>
 
@@ -60,7 +62,9 @@ const onLocaleChange = (event: Event) => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f7f7fb;
+  background:
+    radial-gradient(circle at top left, rgba(251, 191, 36, 0.15), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
   color: #1f2933;
 }
 
@@ -69,8 +73,9 @@ const onLocaleChange = (event: Event) => {
   align-items: center;
   justify-content: space-between;
   padding: 1rem 2rem;
-  background: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 2px 18px rgba(15, 23, 42, 0.06);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -83,19 +88,20 @@ const onLocaleChange = (event: Event) => {
 }
 
 .logo {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.125rem;
 }
 
 nav {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .nav-link {
   font-weight: 500;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.5rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
 }
 
 .nav-link:hover,
@@ -104,9 +110,9 @@ nav {
 }
 
 .language-switch select {
-  border-radius: 0.5rem;
+  border-radius: 999px;
   border: 1px solid #d7dce4;
-  padding: 0.4rem 0.8rem;
+  padding: 0.45rem 0.8rem;
   background: #fff;
   font-size: 0.95rem;
 }
@@ -132,9 +138,24 @@ main {
 }
 
 .app-footer {
-  padding: 1rem 2rem;
+  padding: 1rem 2rem 1.6rem;
   text-align: center;
   font-size: 0.9rem;
   color: #64748b;
+}
+
+@media (max-width: 860px) {
+  .app-header,
+  .header-controls {
+    display: grid;
+  }
+
+  .app-header {
+    padding: 1rem 1.2rem;
+  }
+
+  main {
+    padding: 1.2rem;
+  }
 }
 </style>

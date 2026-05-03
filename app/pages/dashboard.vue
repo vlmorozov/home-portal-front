@@ -1,36 +1,41 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import type { FetchError } from 'ofetch';
 import { useAuth } from '~/composables/useAuth';
+import { useTasks } from '~/composables/useTasks';
 
 const router = useRouter();
 const { t } = useI18n();
 const { profile, fetchProfile, logout } = useAuth();
+const { tasks, listTasks } = useTasks();
 const loadingProfile = ref(false);
+const loadingTasks = ref(false);
 const profileError = ref('');
+const tasksError = ref('');
 
-const stats = [
-  { titleKey: 'dashboard.stats.pendingTasks', value: 12, accent: '#38bdf8' },
-  { titleKey: 'dashboard.stats.upcomingMeetings', value: 4, accent: '#fbbf24' },
-  { titleKey: 'dashboard.stats.messages', value: 8, accent: '#34d399' }
-];
+const pendingTasksCount = computed(() => tasks.value.filter((task) => task.status === 'pending').length);
+const inProgressTasksCount = computed(() => tasks.value.filter((task) => task.status === 'in_progress').length);
+const completedTasksCount = computed(() => tasks.value.filter((task) => task.status === 'completed').length);
+const recentTasks = computed(() => [...tasks.value].sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)).slice(0, 4));
 
-const activities = [
-  { titleKey: 'dashboard.activity.kickoff.title', timeKey: 'dashboard.activity.kickoff.time' },
-  { titleKey: 'dashboard.activity.review.title', timeKey: 'dashboard.activity.review.time' },
-  { titleKey: 'dashboard.activity.payroll.title', timeKey: 'dashboard.activity.payroll.time' }
-];
+const stats = computed(() => [
+  { titleKey: 'dashboard.stats.pendingTasks', value: pendingTasksCount.value, accent: '#c2410c' },
+  { titleKey: 'dashboard.stats.inProgressTasks', value: inProgressTasksCount.value, accent: '#2563eb' },
+  { titleKey: 'dashboard.stats.completedTasks', value: completedTasksCount.value, accent: '#059669' }
+]);
 
 const quickLinks = [
-  { labelKey: 'dashboard.actions.profile.label', descriptionKey: 'dashboard.actions.profile.description', to: '/profile' },
-  { labelKey: 'dashboard.actions.invite.label', descriptionKey: 'dashboard.actions.invite.description', to: '/register' },
+  { labelKey: 'dashboard.actions.tasks.label', descriptionKey: 'dashboard.actions.tasks.description', to: '/tasks' },
+  { labelKey: 'dashboard.actions.register.label', descriptionKey: 'dashboard.actions.register.description', to: '/register' },
   { labelKey: 'dashboard.actions.signout.label', descriptionKey: 'dashboard.actions.signout.description', action: 'signout' }
 ];
 
-const resolveProfileError = (error: unknown) => {
-  const fetchError = error as FetchError<{ message?: string }>;
-  return fetchError?.response?._data?.message || '';
+const resolveErrorMessage = (error: unknown) => {
+  const fetchError = error as FetchError<{ message?: string | string[]; error?: string }>;
+  const message = fetchError?.response?._data?.message;
+  if (Array.isArray(message)) return message.join(' ');
+  return message || fetchError?.response?._data?.error || '';
 };
 
 const loadProfile = async () => {
@@ -39,9 +44,21 @@ const loadProfile = async () => {
   try {
     await fetchProfile();
   } catch (error) {
-    profileError.value = resolveProfileError(error);
+    profileError.value = resolveErrorMessage(error);
   } finally {
     loadingProfile.value = false;
+  }
+};
+
+const loadTasks = async () => {
+  tasksError.value = '';
+  loadingTasks.value = true;
+  try {
+    await listTasks();
+  } catch (error) {
+    tasksError.value = resolveErrorMessage(error);
+  } finally {
+    loadingTasks.value = false;
   }
 };
 
@@ -50,7 +67,12 @@ const handleSignOut = async () => {
   router.push('/login');
 };
 
-onMounted(loadProfile);
+onMounted(async () => {
+  await loadProfile();
+  if (profile.value) {
+    await loadTasks();
+  }
+});
 </script>
 
 <template>
@@ -88,13 +110,22 @@ onMounted(loadProfile);
     </div>
 
     <div class="panel">
-      <h2>{{ t('dashboard.recentlyActive') }}</h2>
-      <ul>
-        <li v-for="item in activities" :key="item.titleKey">
-          <strong>{{ t(item.titleKey) }}</strong>
-          <span>{{ t(item.timeKey) }}</span>
+      <div class="panel-heading">
+        <h2>{{ t('dashboard.recentTasks') }}</h2>
+        <NuxtLink to="/tasks" class="panel-link">{{ t('dashboard.openTasks') }}</NuxtLink>
+      </div>
+      <p v-if="loadingTasks" class="muted">{{ t('dashboard.tasks.loading') }}</p>
+      <p v-else-if="tasksError" class="status error">{{ tasksError }}</p>
+      <ul v-else-if="recentTasks.length">
+        <li v-for="task in recentTasks" :key="task.id">
+          <div>
+            <strong>{{ task.title }}</strong>
+            <p class="muted compact">{{ task.description || t('dashboard.tasks.noDescription') }}</p>
+          </div>
+          <span>{{ t(`dashboard.tasks.status.${task.status}`) }}</span>
         </li>
       </ul>
+      <p v-else class="muted">{{ t('dashboard.tasks.empty') }}</p>
     </div>
 
     <div class="panel">
@@ -188,6 +219,18 @@ h1 {
   box-shadow: 0 10px 25px rgba(15, 23, 42, 0.05);
 }
 
+.panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.panel-link {
+  font-weight: 600;
+  color: #0f172a;
+}
+
 .panel ul {
   list-style: none;
   padding: 0;
@@ -197,6 +240,7 @@ h1 {
 .panel li {
   display: flex;
   justify-content: space-between;
+  gap: 1rem;
   border-bottom: 1px solid #e2e8f0;
   padding: 0.8rem 0;
 }
@@ -219,16 +263,6 @@ h1 {
   margin: 0;
 }
 
-.muted {
-  color: #475569;
-  margin: 0;
-}
-
-.eyebrow.small {
-  font-size: 0.7rem;
-  margin-bottom: 0;
-}
-
 .actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -237,38 +271,35 @@ h1 {
 }
 
 .action-card {
-  border: 1px solid #e2e8f0;
+  display: block;
+  text-align: left;
+  background: #f8fafc;
   border-radius: 1rem;
   padding: 1rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.action-card:hover {
-  border-color: #6366f1;
-  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.16);
+  border: 1px solid #e2e8f0;
 }
 
 .action-button {
-  background: transparent;
-  text-align: left;
+  width: 100%;
   cursor: pointer;
 }
 
 .action-label {
-  font-weight: 600;
+  font-weight: 700;
+  margin: 0 0 0.35rem;
 }
 
-.action-description {
-  color: #475569;
-  margin-top: 0.4rem;
+.action-description,
+.muted,
+.compact {
+  color: #64748b;
 }
 
-.status {
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
+.compact {
+  margin: 0.2rem 0 0;
 }
 
-.error {
+.status.error {
   color: #dc2626;
 }
 </style>

@@ -23,12 +23,10 @@ const buttonLabel = computed(() =>
 );
 
 const resolveErrorMessage = (error: unknown) => {
-  const fetchError = error as FetchError<{ message?: string; error?: string }>;
-  return (
-    fetchError?.response?._data?.message ||
-    fetchError?.response?._data?.error ||
-    (t('register.errors.unexpected') as string)
-  );
+  const fetchError = error as FetchError<{ message?: string | string[]; error?: string }>;
+  const message = fetchError?.response?._data?.message;
+  if (Array.isArray(message)) return message.join(' ');
+  return message || fetchError?.response?._data?.error || (t('register.errors.unexpected') as string);
 };
 
 const handleRegister = async () => {

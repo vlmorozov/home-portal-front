@@ -4,6 +4,7 @@ export default {
     login: 'Login',
     register: 'Register',
     dashboard: 'Dashboard',
+    tasks: 'Tasks',
     footer: 'Home Portal',
     languageLabel: 'Language'
   },
@@ -11,7 +12,7 @@ export default {
     eyebrow: 'Welcome back',
     heading: 'Sign in to continue',
     emailLabel: 'Email address',
-    emailPlaceholder: 'you@example.com',
+    emailPlaceholder: 'name at example.com',
     passwordLabel: 'Password',
     passwordPlaceholder: '••••••••',
     button: 'Sign in',
@@ -30,7 +31,7 @@ export default {
     fullNameLabel: 'Full name',
     fullNamePlaceholder: 'Jane Doe',
     emailLabel: 'Email address',
-    emailPlaceholder: 'you@example.com',
+    emailPlaceholder: 'name at example.com',
     passwordLabel: 'Password',
     confirmPasswordLabel: 'Confirm password',
     passwordPlaceholder: '••••••••',
@@ -50,34 +51,21 @@ export default {
     heading: 'Your dashboard',
     signOut: 'Sign out',
     stats: {
-      pendingTasks: 'Pending Tasks',
-      upcomingMeetings: 'Upcoming Meetings',
-      messages: 'Messages'
+      pendingTasks: 'Pending tasks',
+      inProgressTasks: 'In progress',
+      completedTasks: 'Completed tasks'
     },
-    recentlyActive: 'Recently active',
-    activity: {
-      kickoff: {
-        title: 'Project kickoff',
-        time: 'Today · 2:00 PM'
-      },
-      review: {
-        title: 'Design review',
-        time: 'Tomorrow · 11:00 AM'
-      },
-      payroll: {
-        title: 'Payroll approval',
-        time: 'Friday · 9:00 AM'
-      }
-    },
+    recentTasks: 'Recent tasks',
+    openTasks: 'Open tasks board',
     quickActions: 'Quick actions',
     actions: {
-      profile: {
-        label: 'View profile',
-        description: 'Update your information'
+      tasks: {
+        label: 'Manage tasks',
+        description: 'Create, update and review your tasks'
       },
-      invite: {
-        label: 'Invite teammate',
-        description: 'Share access with a colleague'
+      register: {
+        label: 'Create another account',
+        description: 'Open the registration flow'
       },
       signout: {
         label: 'Sign out',
@@ -88,6 +76,90 @@ export default {
       title: 'Signed in as',
       loading: 'Loading your profile…',
       empty: 'You are not signed in.'
+    },
+    tasks: {
+      loading: 'Loading your tasks…',
+      empty: 'No tasks yet. Create your first one from the tasks board.',
+      noDescription: 'No description provided.',
+      status: {
+        pending: 'Pending',
+        in_progress: 'In progress',
+        completed: 'Completed'
+      }
+    }
+  },
+  tasks: {
+    eyebrow: 'Execution board',
+    heading: 'Tasks workspace',
+    description: 'Track the full lifecycle of your tasks: create, review, update and complete them from one place.',
+    backToDashboard: 'Back to dashboard',
+    filters: {
+      all: 'All',
+      pending: 'Pending',
+      inProgress: 'In progress',
+      completed: 'Completed'
+    },
+    status: {
+      pending: 'Pending',
+      in_progress: 'In progress',
+      completed: 'Completed'
+    },
+    create: {
+      heading: 'Create a task',
+      subheading: 'Send a new task directly to the backend.',
+      submit: 'Create task',
+      submitting: 'Creating…'
+    },
+    list: {
+      heading: 'Task list',
+      subheading: 'These items come from the protected backend endpoints.',
+      loading: 'Loading tasks…',
+      empty: 'No tasks match this filter yet.'
+    },
+    form: {
+      title: 'Title',
+      titlePlaceholder: 'Prepare project kickoff notes',
+      description: 'Description',
+      descriptionPlaceholder: 'Add context, deadlines and dependencies.',
+      status: 'Status',
+      dueDate: 'Due date'
+    },
+    actions: {
+      markPending: 'Set pending',
+      markInProgress: 'Start work',
+      markCompleted: 'Complete',
+      open: 'Open',
+      delete: 'Delete'
+    },
+    confirmDelete: {
+      title: 'Delete this task?',
+      message: 'This action removes the task permanently. You cannot undo it later.',
+      confirm: 'Delete task',
+      cancel: 'Keep task'
+    },
+    card: {
+      noDescription: 'No description provided.',
+      noDueDate: 'No due date'
+    },
+    detail: {
+      eyebrow: 'Task details',
+      heading: 'Review and update task',
+      back: 'Back to tasks',
+      loading: 'Loading task…',
+      save: 'Save changes',
+      saving: 'Saving…',
+      delete: 'Delete task',
+      deleting: 'Deleting…',
+      taskId: 'Task ID',
+      createdAt: 'Created at',
+      updatedAt: 'Updated at'
+    },
+    feedback: {
+      created: 'Task created successfully.',
+      updated: 'Task updated successfully.',
+      deleted: 'Task deleted successfully.',
+      titleRequired: 'Task title is required.',
+      unexpected: 'Unable to complete the task request.'
     }
   }
 } as const;
