@@ -1,0 +1,5 @@
+name: homeportal-front-${STACK}
+
+services:
+  hp_front:
+    build: .
