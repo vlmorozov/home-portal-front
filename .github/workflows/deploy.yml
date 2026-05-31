@@ -1,0 +1,51 @@
+name: Deploy Front to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'main' && 'production' || 'development' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+
+            BRANCH="${{ github.ref_name }}"
+            COMPOSE_FILE_ARGS="-f docker-compose.yml"
+            ENV_FILE_ARGS="--env-file .env"
+
+            cd "${{ secrets.PROJECT_PATH }}"
+
+            if [ -f docker-compose.override.yml ]; then
+              COMPOSE_FILE_ARGS="${COMPOSE_FILE_ARGS} -f docker-compose.override.yml"
+            fi
+
+            if [ -f .env.local ]; then
+              ENV_FILE_ARGS="${ENV_FILE_ARGS} --env-file .env.local"
+            fi
+
+            echo "Pull latest changes from ${BRANCH} branch"
+            git fetch origin "${BRANCH}"
+            git checkout "${BRANCH}"
+            git pull --ff-only origin "${BRANCH}"
+
+            echo "Restart front service"
+            docker compose ${COMPOSE_FILE_ARGS} down --remove-orphans
+            docker compose ${COMPOSE_FILE_ARGS} ${ENV_FILE_ARGS} up -d --build
+
+            echo "Done"
