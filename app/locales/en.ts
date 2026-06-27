@@ -128,6 +128,9 @@ export default {
       markPending: 'Set pending',
       markInProgress: 'Start work',
       markCompleted: 'Complete',
+      assignToList: 'Add to {list}',
+      assigning: 'Adding...',
+      removeFromList: 'Remove from list',
       open: 'Open',
       delete: 'Delete'
     },
@@ -140,6 +143,44 @@ export default {
     card: {
       noDescription: 'No description provided.',
       noDueDate: 'No due date'
+    },
+    taskLists: {
+      heading: 'Task lists',
+      subheading: 'Group tasks into working sets without duplicating the task itself.',
+      title: 'List title',
+      titlePlaceholder: 'Home renovation',
+      description: 'List description',
+      descriptionPlaceholder: 'Optional context for this group.',
+      create: 'Create list',
+      creating: 'Creating...',
+      allTasks: 'All tasks',
+      addNewTo: 'Add new task to list',
+      withoutList: 'Without list',
+      delete: 'Delete list',
+      confirmDelete: {
+        title: 'Delete this list?',
+        message: 'Tasks stay in the system, only the list and its links are removed.',
+        confirm: 'Delete list',
+        cancel: 'Keep list'
+      }
+    },
+    events: {
+      heading: 'Status history',
+      subheading: 'Each status or due date change is stored as a task event.',
+      create: 'Add event',
+      creating: 'Adding...',
+      delete: 'Delete',
+      empty: 'No events yet.'
+    },
+    subtasks: {
+      heading: 'Subtasks',
+      subheading: 'Link existing tasks as children of this task.',
+      selectTask: 'Task',
+      selectPlaceholder: 'Select a task',
+      add: 'Add subtask',
+      adding: 'Adding...',
+      delete: 'Remove',
+      empty: 'No subtasks yet.'
     },
     detail: {
       eyebrow: 'Task details',
@@ -158,7 +199,16 @@ export default {
       created: 'Task created successfully.',
       updated: 'Task updated successfully.',
       deleted: 'Task deleted successfully.',
+      eventCreated: 'Task event added.',
+      eventDeleted: 'Task event deleted.',
+      subtaskCreated: 'Subtask added.',
+      subtaskDeleted: 'Subtask removed.',
+      taskAssigned: 'Task added to list.',
+      taskRemovedFromList: 'Task removed from list.',
+      taskListCreated: 'Task list created.',
+      taskListDeleted: 'Task list deleted.',
       titleRequired: 'Task title is required.',
+      taskListTitleRequired: 'Task list title is required.',
       unexpected: 'Unable to complete the task request.'
     }
   }

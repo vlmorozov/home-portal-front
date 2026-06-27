@@ -128,6 +128,9 @@ export default {
       markPending: 'Вернуть в ожидание',
       markInProgress: 'Начать работу',
       markCompleted: 'Завершить',
+      assignToList: 'Добавить в {list}',
+      assigning: 'Добавляем...',
+      removeFromList: 'Убрать из списка',
       open: 'Открыть',
       delete: 'Удалить'
     },
@@ -140,6 +143,44 @@ export default {
     card: {
       noDescription: 'Описание не указано.',
       noDueDate: 'Срок не задан'
+    },
+    taskLists: {
+      heading: 'Списки задач',
+      subheading: 'Группируйте задачи без создания дублей.',
+      title: 'Название списка',
+      titlePlaceholder: 'Ремонт дома',
+      description: 'Описание списка',
+      descriptionPlaceholder: 'Необязательный контекст для группы.',
+      create: 'Создать список',
+      creating: 'Создаём...',
+      allTasks: 'Все задачи',
+      addNewTo: 'Добавить новую задачу в список',
+      withoutList: 'Без списка',
+      delete: 'Удалить список',
+      confirmDelete: {
+        title: 'Удалить этот список?',
+        message: 'Задачи останутся в системе, удалится только список и его связи.',
+        confirm: 'Удалить список',
+        cancel: 'Оставить список'
+      }
+    },
+    events: {
+      heading: 'История статусов',
+      subheading: 'Каждое изменение статуса или срока хранится как событие задачи.',
+      create: 'Добавить событие',
+      creating: 'Добавляем...',
+      delete: 'Удалить',
+      empty: 'Событий пока нет.'
+    },
+    subtasks: {
+      heading: 'Подзадачи',
+      subheading: 'Связывайте существующие задачи как дочерние.',
+      selectTask: 'Задача',
+      selectPlaceholder: 'Выберите задачу',
+      add: 'Добавить подзадачу',
+      adding: 'Добавляем...',
+      delete: 'Убрать',
+      empty: 'Подзадач пока нет.'
     },
     detail: {
       eyebrow: 'Детали задачи',
@@ -158,7 +199,16 @@ export default {
       created: 'Задача успешно создана.',
       updated: 'Задача успешно обновлена.',
       deleted: 'Задача успешно удалена.',
+      eventCreated: 'Событие задачи добавлено.',
+      eventDeleted: 'Событие задачи удалено.',
+      subtaskCreated: 'Подзадача добавлена.',
+      subtaskDeleted: 'Подзадача убрана.',
+      taskAssigned: 'Задача добавлена в список.',
+      taskRemovedFromList: 'Задача убрана из списка.',
+      taskListCreated: 'Список задач создан.',
+      taskListDeleted: 'Список задач удалён.',
       titleRequired: 'Нужно указать название задачи.',
+      taskListTitleRequired: 'Нужно указать название списка.',
       unexpected: 'Не удалось выполнить запрос по задаче.'
     }
   }
