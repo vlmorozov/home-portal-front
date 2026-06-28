@@ -36,6 +36,7 @@ const errorMessage = ref('');
 const activeFilter = ref<'all' | TaskStatus>('all');
 const activeTaskListId = ref('all');
 const targetTaskListId = ref('');
+const taskAssignTargets = ref<Record<string, string>>({});
 
 const form = reactive({
   title: '',
@@ -86,7 +87,12 @@ const counters = computed(() => ({
 }));
 
 const currentTaskList = computed(() => taskLists.value.find((taskList) => taskList.id === activeTaskListId.value) ?? null);
-const selectedTargetList = computed(() => taskLists.value.find((taskList) => taskList.id === targetTaskListId.value) ?? null);
+
+const getTaskAssignTarget = (taskId: string) => taskAssignTargets.value[taskId] || taskLists.value[0]?.id || '';
+
+const setTaskAssignTarget = (taskId: string, taskListId: string) => {
+  taskAssignTargets.value = { ...taskAssignTargets.value, [taskId]: taskListId };
+};
 
 const ensureAuth = async () => {
   if (accessToken.value) return true;
@@ -214,11 +220,12 @@ const handleDeleteTaskList = async (taskListId: string) => {
 };
 
 const handleAssignTask = async (taskId: string) => {
-  if (!targetTaskListId.value) return;
+  const taskListId = getTaskAssignTarget(taskId);
+  if (!taskListId) return;
   assigningTaskId.value = taskId;
   errorMessage.value = '';
   try {
-    await addTaskToTaskList(targetTaskListId.value, taskId);
+    await addTaskToTaskList(taskListId, taskId);
     pushToast('success', t('tasks.feedback.taskAssigned') as string);
   } catch (error) {
     errorMessage.value = resolveErrorMessage(error);
@@ -439,9 +446,21 @@ onMounted(async () => {
               <button type="button" class="ghost small" @click="handleQuickStatus(task.id, 'pending')">{{ t('tasks.actions.markPending') }}</button>
               <button type="button" class="ghost small" @click="handleQuickStatus(task.id, 'in_progress')">{{ t('tasks.actions.markInProgress') }}</button>
               <button type="button" class="ghost small" @click="handleQuickStatus(task.id, 'completed')">{{ t('tasks.actions.markCompleted') }}</button>
-              <button v-if="activeTaskListId === 'all' && selectedTargetList" type="button" class="ghost small" :disabled="assigningTaskId === task.id" @click="handleAssignTask(task.id)">
-                {{ assigningTaskId === task.id ? t('tasks.actions.assigning') : t('tasks.actions.assignToList', { list: selectedTargetList.title }) }}
-              </button>
+              <div v-if="activeTaskListId === 'all' && taskLists.length" class="assign-control">
+                <select
+                  class="small-select"
+                  :value="getTaskAssignTarget(task.id)"
+                  :aria-label="t('tasks.taskLists.addNewTo') as string"
+                  @change="setTaskAssignTarget(task.id, ($event.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="taskList in taskLists" :key="taskList.id" :value="taskList.id">
+                    {{ taskList.title }}
+                  </option>
+                </select>
+                <button type="button" class="ghost small" :disabled="assigningTaskId === task.id || !getTaskAssignTarget(task.id)" @click="handleAssignTask(task.id)">
+                  {{ assigningTaskId === task.id ? t('tasks.actions.assigning') : t('tasks.actions.addToSelectedList') }}
+                </button>
+              </div>
               <button v-if="activeTaskListId !== 'all'" type="button" class="ghost small" @click="handleRemoveFromActiveList(task.id)">{{ t('tasks.actions.removeFromList') }}</button>
               <NuxtLink :to="`/tasks/${task.id}`" class="ghost small link-button">{{ t('tasks.actions.open') }}</NuxtLink>
               <button type="button" class="danger small" @click="handleDelete(task.id)">{{ t('tasks.actions.delete') }}</button>
@@ -622,6 +641,13 @@ onMounted(async () => {
 .task-actions {
   display: grid;
   gap: 0.9rem;
+}
+
+.assign-control {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
 }
 
 label {
@@ -829,6 +855,13 @@ textarea {
   font-size: 0.88rem;
 }
 
+.small-select {
+  min-height: 2.35rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+}
+
 .status {
   margin: 0;
   padding: 0.95rem 1.1rem;
@@ -859,8 +892,13 @@ button:disabled {
   .list-head,
   .task-card,
   .task-topline,
-  .split-fields {
+  .split-fields,
+  .assign-control {
     display: grid;
+  }
+
+  .assign-control {
+    grid-template-columns: 1fr;
   }
 }
 </style>

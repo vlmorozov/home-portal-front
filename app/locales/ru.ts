@@ -131,6 +131,7 @@ export default {
       markCompleted: 'Завершить',
       assignToList: 'Добавить в {list}',
       assigning: 'Добавляем...',
+      addToSelectedList: 'Добавить в список',
       removeFromList: 'Убрать из списка',
       open: 'Открыть',
       delete: 'Удалить'
