@@ -220,7 +220,9 @@ export const useTasks = () => {
     await apiFetch(`/v1/tasks/${id}`, { method: 'DELETE' });
     tasks.value = tasks.value.filter((task) => task.id !== id);
     Object.keys(taskListTasks.value).forEach((listId) => {
-      taskListTasks.value[listId] = taskListTasks.value[listId].filter((task) => task.id !== id);
+      if (taskListTasks.value[listId]) {
+        taskListTasks.value[listId] = taskListTasks.value[listId].filter((task) => task.id !== id);
+      }
     });
     if (currentTask.value?.id === id) currentTask.value = null;
   };

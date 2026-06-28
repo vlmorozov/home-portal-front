@@ -311,73 +311,81 @@ onMounted(async () => {
 
     <div class="content-grid">
       <section class="panel form-panel">
-        <div class="panel-head">
-          <h2>{{ t('tasks.create.heading') }}</h2>
-          <p>{{ t('tasks.create.subheading') }}</p>
+        <div class="accordion-stack">
+          <details class="accordion-item" open>
+            <summary class="accordion-summary">
+              <span>
+                <strong>{{ t('tasks.create.heading') }}</strong>
+                <small>{{ t('tasks.create.subheading') }}</small>
+              </span>
+            </summary>
+
+            <form class="task-form accordion-content" @submit.prevent="handleCreate">
+              <label>
+                {{ t('tasks.form.title') }}
+                <input v-model="form.title" type="text" maxlength="200" :placeholder="t('tasks.form.titlePlaceholder') as string" />
+              </label>
+
+              <label>
+                {{ t('tasks.form.description') }}
+                <textarea v-model="form.description" rows="4" :placeholder="t('tasks.form.descriptionPlaceholder') as string" />
+              </label>
+
+              <div class="split-fields">
+                <label>
+                  {{ t('tasks.form.status') }}
+                  <select v-model="form.status">
+                    <option v-for="status in statusOptions" :key="status" :value="status">
+                      {{ t(`tasks.status.${status}`) }}
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  {{ t('tasks.form.dueDate') }}
+                  <input v-model="form.dueDate" type="datetime-local" />
+                </label>
+              </div>
+
+              <label v-if="taskLists.length">
+                {{ t('tasks.taskLists.addNewTo') }}
+                <select v-model="targetTaskListId">
+                  <option value="">{{ t('tasks.taskLists.withoutList') }}</option>
+                  <option v-for="taskList in taskLists" :key="taskList.id" :value="taskList.id">
+                    {{ taskList.title }}
+                  </option>
+                </select>
+              </label>
+
+              <button type="submit" class="primary" :disabled="submitting">
+                {{ submitting ? t('tasks.create.submitting') : t('tasks.create.submit') }}
+              </button>
+            </form>
+          </details>
+
+          <details class="accordion-item">
+            <summary class="accordion-summary">
+              <span>
+                <strong>{{ t('tasks.taskLists.heading') }}</strong>
+                <small>{{ t('tasks.taskLists.subheading') }}</small>
+              </span>
+            </summary>
+
+            <form class="task-form accordion-content" @submit.prevent="handleCreateTaskList">
+              <label>
+                {{ t('tasks.taskLists.title') }}
+                <input v-model="taskListForm.title" type="text" maxlength="160" :placeholder="t('tasks.taskLists.titlePlaceholder') as string" />
+              </label>
+              <label>
+                {{ t('tasks.taskLists.description') }}
+                <textarea v-model="taskListForm.description" rows="3" :placeholder="t('tasks.taskLists.descriptionPlaceholder') as string" />
+              </label>
+              <button type="submit" class="primary" :disabled="listSubmitting">
+                {{ listSubmitting ? t('tasks.taskLists.creating') : t('tasks.taskLists.create') }}
+              </button>
+            </form>
+          </details>
         </div>
-
-        <form class="task-form" @submit.prevent="handleCreate">
-          <label>
-            {{ t('tasks.form.title') }}
-            <input v-model="form.title" type="text" maxlength="200" :placeholder="t('tasks.form.titlePlaceholder') as string" />
-          </label>
-
-          <label>
-            {{ t('tasks.form.description') }}
-            <textarea v-model="form.description" rows="4" :placeholder="t('tasks.form.descriptionPlaceholder') as string" />
-          </label>
-
-          <div class="split-fields">
-            <label>
-              {{ t('tasks.form.status') }}
-              <select v-model="form.status">
-                <option v-for="status in statusOptions" :key="status" :value="status">
-                  {{ t(`tasks.status.${status}`) }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ t('tasks.form.dueDate') }}
-              <input v-model="form.dueDate" type="datetime-local" />
-            </label>
-          </div>
-
-          <label v-if="taskLists.length">
-            {{ t('tasks.taskLists.addNewTo') }}
-            <select v-model="targetTaskListId">
-              <option value="">{{ t('tasks.taskLists.withoutList') }}</option>
-              <option v-for="taskList in taskLists" :key="taskList.id" :value="taskList.id">
-                {{ taskList.title }}
-              </option>
-            </select>
-          </label>
-
-          <button type="submit" class="primary" :disabled="submitting">
-            {{ submitting ? t('tasks.create.submitting') : t('tasks.create.submit') }}
-          </button>
-        </form>
-
-        <div class="divider" />
-
-        <div class="panel-head compact-head">
-          <h2>{{ t('tasks.taskLists.heading') }}</h2>
-          <p>{{ t('tasks.taskLists.subheading') }}</p>
-        </div>
-
-        <form class="task-form" @submit.prevent="handleCreateTaskList">
-          <label>
-            {{ t('tasks.taskLists.title') }}
-            <input v-model="taskListForm.title" type="text" maxlength="160" :placeholder="t('tasks.taskLists.titlePlaceholder') as string" />
-          </label>
-          <label>
-            {{ t('tasks.taskLists.description') }}
-            <textarea v-model="taskListForm.description" rows="3" :placeholder="t('tasks.taskLists.descriptionPlaceholder') as string" />
-          </label>
-          <button type="submit" class="primary" :disabled="listSubmitting">
-            {{ listSubmitting ? t('tasks.taskLists.creating') : t('tasks.taskLists.create') }}
-          </button>
-        </form>
 
         <div class="task-list-switcher">
           <button type="button" class="list-switch" :class="{ active: activeTaskListId === 'all' }" @click="handleSelectTaskList('all')">
@@ -547,6 +555,68 @@ onMounted(async () => {
   margin-top: 0;
 }
 
+.accordion-stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.accordion-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #fff;
+  overflow: hidden;
+}
+
+.accordion-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.accordion-summary::after {
+  content: "+";
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #243041;
+  font-weight: 700;
+}
+
+.accordion-item[open] > .accordion-summary::after {
+  content: "-";
+}
+
+.accordion-summary span {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.accordion-summary strong {
+  color: #111827;
+}
+
+.accordion-summary small {
+  color: #5b6474;
+  line-height: 1.35;
+}
+
+.accordion-content {
+  padding: 0 1rem 1rem;
+}
+
 .task-form,
 .task-list,
 .task-actions,
@@ -572,6 +642,9 @@ button {
 input,
 textarea,
 select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid #d6deea;
   border-radius: 0.9rem;
   padding: 0.8rem 0.95rem;
@@ -591,7 +664,13 @@ textarea {
 }
 
 .split-fields > label {
+  min-width: 0;
   flex: 1;
+}
+
+.form-panel .split-fields {
+  display: grid;
+  grid-template-columns: 1fr;
 }
 
 .list-head {
