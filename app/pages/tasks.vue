@@ -386,23 +386,23 @@ onMounted(async () => {
             </form>
           </details>
         </div>
-
-        <div class="task-list-switcher">
-          <button type="button" class="list-switch" :class="{ active: activeTaskListId === 'all' }" @click="handleSelectTaskList('all')">
-            <span>{{ t('tasks.taskLists.allTasks') }}</span>
-            <strong>{{ tasks.length }}</strong>
-          </button>
-          <div v-for="taskList in taskLists" :key="taskList.id" class="list-row">
-            <button type="button" class="list-switch" :class="{ active: activeTaskListId === taskList.id }" @click="handleSelectTaskList(taskList.id)">
-              <span>{{ taskList.title }}</span>
-              <strong>{{ taskListTasks[taskList.id]?.length ?? 0 }}</strong>
-            </button>
-            <button type="button" class="danger icon-button" :aria-label="t('tasks.taskLists.delete') as string" @click="handleDeleteTaskList(taskList.id)">×</button>
-          </div>
-        </div>
       </section>
 
       <section class="panel list-panel">
+        <div class="task-list-tabs" role="tablist" :aria-label="t('tasks.taskLists.heading') as string">
+          <button type="button" role="tab" class="task-list-tab" :aria-selected="activeTaskListId === 'all'" :class="{ active: activeTaskListId === 'all' }" @click="handleSelectTaskList('all')">
+            <span>{{ t('tasks.taskLists.allTasks') }}</span>
+            <strong>{{ tasks.length }}</strong>
+          </button>
+          <div v-for="taskList in taskLists" :key="taskList.id" class="task-list-tab-group">
+            <button type="button" role="tab" class="task-list-tab" :aria-selected="activeTaskListId === taskList.id" :class="{ active: activeTaskListId === taskList.id }" @click="handleSelectTaskList(taskList.id)">
+              <span>{{ taskList.title }}</span>
+              <strong>{{ taskListTasks[taskList.id]?.length ?? 0 }}</strong>
+            </button>
+            <button type="button" class="danger icon-button tab-delete" :aria-label="t('tasks.taskLists.delete') as string" @click="handleDeleteTaskList(taskList.id)">×</button>
+          </div>
+        </div>
+
         <div class="panel-head list-head">
           <div>
             <h2>{{ currentTaskList?.title || t('tasks.list.heading') }}</h2>
@@ -619,8 +619,7 @@ onMounted(async () => {
 
 .task-form,
 .task-list,
-.task-actions,
-.task-list-switcher {
+.task-actions {
   display: grid;
   gap: 0.9rem;
 }
@@ -657,8 +656,7 @@ textarea {
 
 .split-fields,
 .list-head,
-.task-topline,
-.list-row {
+.task-topline {
   display: flex;
   gap: 0.8rem;
 }
@@ -689,7 +687,7 @@ textarea {
 .primary,
 .danger,
 .link-button,
-.list-switch {
+.task-list-tab {
   border: none;
   border-radius: 999px;
   padding: 0.72rem 1rem;
@@ -700,13 +698,13 @@ textarea {
 .filter-chip,
 .ghost,
 .link-button,
-.list-switch {
+.task-list-tab {
   background: #edf2f7;
   color: #243041;
 }
 
 .filter-chip.active,
-.list-switch.active {
+.task-list-tab.active {
   background: #1f2937;
   color: #fff;
 }
@@ -728,20 +726,48 @@ textarea {
   background: #e2e8f0;
 }
 
-.task-list-switcher {
-  margin-top: 1rem;
+.task-list-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
 }
 
-.list-switch {
-  width: 100%;
+.task-list-tab-group {
   display: flex;
-  justify-content: space-between;
-  gap: 0.8rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.task-list-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  max-width: 16rem;
   text-align: left;
 }
 
-.list-row {
-  align-items: center;
+.task-list-tab span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-list-tab strong {
+  flex: 0 0 auto;
+}
+
+.task-list-tab-group .task-list-tab {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.tab-delete {
+  margin-left: 1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 .icon-button {
