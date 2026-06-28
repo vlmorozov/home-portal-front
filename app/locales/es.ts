@@ -5,6 +5,7 @@ export default {
     register: 'Registrar',
     dashboard: 'Panel',
     tasks: 'Tareas',
+    logout: 'Cerrar sesión',
     footer: 'Portal Hogar',
     languageLabel: 'Idioma'
   },

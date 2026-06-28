@@ -5,6 +5,7 @@ export default {
     register: 'Register',
     dashboard: 'Dashboard',
     tasks: 'Tasks',
+    logout: 'Sign out',
     footer: 'Home Portal',
     languageLabel: 'Language'
   },

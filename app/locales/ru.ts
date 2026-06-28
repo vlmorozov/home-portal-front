@@ -5,6 +5,7 @@ export default {
     register: 'Регистрация',
     dashboard: 'Панель',
     tasks: 'Задачи',
+    logout: 'Выйти',
     footer: 'Домашний портал',
     languageLabel: 'Язык'
   },
