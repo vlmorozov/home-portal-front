@@ -5,6 +5,7 @@ export default {
     register: 'Registrar',
     dashboard: 'Panel',
     tasks: 'Tareas',
+    logout: 'Cerrar sesión',
     footer: 'Portal Hogar',
     languageLabel: 'Idioma'
   },
@@ -128,6 +129,9 @@ export default {
       markPending: 'Marcar pendiente',
       markInProgress: 'Iniciar trabajo',
       markCompleted: 'Completar',
+      assignToList: 'Agregar a {list}',
+      assigning: 'Agregando...',
+      removeFromList: 'Quitar de la lista',
       open: 'Abrir',
       delete: 'Eliminar'
     },
@@ -140,6 +144,44 @@ export default {
     card: {
       noDescription: 'Sin descripción.',
       noDueDate: 'Sin fecha límite'
+    },
+    taskLists: {
+      heading: 'Listas de tareas',
+      subheading: 'Agrupa tareas sin duplicarlas.',
+      title: 'Título de lista',
+      titlePlaceholder: 'Renovación del hogar',
+      description: 'Descripción de lista',
+      descriptionPlaceholder: 'Contexto opcional para este grupo.',
+      create: 'Crear lista',
+      creating: 'Creando...',
+      allTasks: 'Todas las tareas',
+      addNewTo: 'Agregar nueva tarea a lista',
+      withoutList: 'Sin lista',
+      delete: 'Eliminar lista',
+      confirmDelete: {
+        title: '¿Eliminar esta lista?',
+        message: 'Las tareas permanecen en el sistema; solo se eliminan la lista y sus enlaces.',
+        confirm: 'Eliminar lista',
+        cancel: 'Conservar lista'
+      }
+    },
+    events: {
+      heading: 'Historial de estado',
+      subheading: 'Cada cambio de estado o fecha se guarda como evento de tarea.',
+      create: 'Agregar evento',
+      creating: 'Agregando...',
+      delete: 'Eliminar',
+      empty: 'Aún no hay eventos.'
+    },
+    subtasks: {
+      heading: 'Subtareas',
+      subheading: 'Vincula tareas existentes como hijas de esta tarea.',
+      selectTask: 'Tarea',
+      selectPlaceholder: 'Selecciona una tarea',
+      add: 'Agregar subtarea',
+      adding: 'Agregando...',
+      delete: 'Quitar',
+      empty: 'Aún no hay subtareas.'
     },
     detail: {
       eyebrow: 'Detalle de tarea',
@@ -158,7 +200,16 @@ export default {
       created: 'Tarea creada correctamente.',
       updated: 'Tarea actualizada correctamente.',
       deleted: 'Tarea eliminada correctamente.',
+      eventCreated: 'Evento de tarea agregado.',
+      eventDeleted: 'Evento de tarea eliminado.',
+      subtaskCreated: 'Subtarea agregada.',
+      subtaskDeleted: 'Subtarea quitada.',
+      taskAssigned: 'Tarea agregada a la lista.',
+      taskRemovedFromList: 'Tarea quitada de la lista.',
+      taskListCreated: 'Lista de tareas creada.',
+      taskListDeleted: 'Lista de tareas eliminada.',
       titleRequired: 'El título de la tarea es obligatorio.',
+      taskListTitleRequired: 'El título de la lista es obligatorio.',
       unexpected: 'No fue posible completar la solicitud de tareas.'
     }
   }

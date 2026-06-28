@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useAuth } from '~/composables/useAuth';
 
 const { t, locale, availableLocales } = useI18n();
+const router = useRouter();
+const { accessToken, profile, fetchProfile, logout } = useAuth();
+
+const isAuthenticated = computed(() => Boolean(accessToken.value || profile.value));
 
 const localeLabels: Record<string, string> = {
   en: 'English',
@@ -21,6 +26,17 @@ const onLocaleChange = (event: Event) => {
   const { value } = event.target as HTMLSelectElement;
   locale.value = value;
 };
+
+const handleLogout = async () => {
+  await logout();
+  await router.push('/login');
+};
+
+onMounted(() => {
+  if (!isAuthenticated.value) {
+    fetchProfile().catch(() => {});
+  }
+});
 </script>
 
 <template>
@@ -29,10 +45,15 @@ const onLocaleChange = (event: Event) => {
       <NuxtLink to="/" class="logo">{{ t('layout.appName') }}</NuxtLink>
       <div class="header-controls">
         <nav>
-          <NuxtLink to="/login" class="nav-link">{{ t('layout.login') }}</NuxtLink>
-          <NuxtLink to="/register" class="nav-link">{{ t('layout.register') }}</NuxtLink>
-          <NuxtLink to="/dashboard" class="nav-link">{{ t('layout.dashboard') }}</NuxtLink>
-          <NuxtLink to="/tasks" class="nav-link">{{ t('layout.tasks') }}</NuxtLink>
+          <template v-if="isAuthenticated">
+            <NuxtLink to="/dashboard" class="nav-link">{{ t('layout.dashboard') }}</NuxtLink>
+            <NuxtLink to="/tasks" class="nav-link">{{ t('layout.tasks') }}</NuxtLink>
+            <button type="button" class="nav-link nav-button" @click="handleLogout">{{ t('layout.logout') }}</button>
+          </template>
+          <template v-else>
+            <NuxtLink to="/login" class="nav-link">{{ t('layout.login') }}</NuxtLink>
+            <NuxtLink to="/register" class="nav-link">{{ t('layout.register') }}</NuxtLink>
+          </template>
         </nav>
         <label class="language-switch">
           <span class="sr-only">{{ t('layout.languageLabel') }}</span>
@@ -102,6 +123,13 @@ nav {
   font-weight: 500;
   padding: 0.45rem 0.85rem;
   border-radius: 999px;
+}
+
+.nav-button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }
 
 .nav-link:hover,

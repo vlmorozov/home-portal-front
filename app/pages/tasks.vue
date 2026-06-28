@@ -10,20 +10,43 @@ import { useConfirm } from '~/composables/useConfirm';
 const router = useRouter();
 const { t } = useI18n();
 const { accessToken, fetchProfile } = useAuth();
-const { tasks, listTasks, createTask, updateTask, deleteTask } = useTasks();
+const {
+  tasks,
+  taskLists,
+  taskListTasks,
+  listTasks,
+  createTask,
+  updateTask,
+  deleteTask,
+  listTaskLists,
+  createTaskList,
+  deleteTaskList,
+  listTaskListTasks,
+  addTaskToTaskList,
+  removeTaskFromTaskList
+} = useTasks();
 const { pushToast } = useToast();
 const { confirm } = useConfirm();
 
 const loading = ref(false);
 const submitting = ref(false);
+const listSubmitting = ref(false);
+const assigningTaskId = ref('');
 const errorMessage = ref('');
 const activeFilter = ref<'all' | TaskStatus>('all');
+const activeTaskListId = ref('all');
+const targetTaskListId = ref('');
 
 const form = reactive({
   title: '',
   description: '',
   status: 'pending' as TaskStatus,
   dueDate: ''
+});
+
+const taskListForm = reactive({
+  title: '',
+  description: ''
 });
 
 const statusOptions: TaskStatus[] = ['pending', 'in_progress', 'completed'];
@@ -45,17 +68,25 @@ const formatDueDate = (value: string | null) => {
   }).format(new Date(value));
 };
 
+const sourceTasks = computed(() => {
+  if (activeTaskListId.value === 'all') return tasks.value;
+  return taskListTasks.value[activeTaskListId.value] ?? [];
+});
+
 const filteredTasks = computed(() => {
-  if (activeFilter.value === 'all') return tasks.value;
-  return tasks.value.filter((task) => task.status === activeFilter.value);
+  if (activeFilter.value === 'all') return sourceTasks.value;
+  return sourceTasks.value.filter((task) => task.status === activeFilter.value);
 });
 
 const counters = computed(() => ({
-  all: tasks.value.length,
-  pending: tasks.value.filter((task) => task.status === 'pending').length,
-  in_progress: tasks.value.filter((task) => task.status === 'in_progress').length,
-  completed: tasks.value.filter((task) => task.status === 'completed').length
+  all: sourceTasks.value.length,
+  pending: sourceTasks.value.filter((task) => task.status === 'pending').length,
+  in_progress: sourceTasks.value.filter((task) => task.status === 'in_progress').length,
+  completed: sourceTasks.value.filter((task) => task.status === 'completed').length
 }));
+
+const currentTaskList = computed(() => taskLists.value.find((taskList) => taskList.id === activeTaskListId.value) ?? null);
+const selectedTargetList = computed(() => taskLists.value.find((taskList) => taskList.id === targetTaskListId.value) ?? null);
 
 const ensureAuth = async () => {
   if (accessToken.value) return true;
@@ -72,7 +103,13 @@ const loadTasks = async () => {
   loading.value = true;
   errorMessage.value = '';
   try {
-    await listTasks();
+    await Promise.all([listTasks(), listTaskLists()]);
+    if (activeTaskListId.value !== 'all') {
+      await listTaskListTasks(activeTaskListId.value);
+    }
+    if (!targetTaskListId.value && taskLists.value.length) {
+      targetTaskListId.value = taskLists.value[0].id;
+    }
   } catch (error) {
     errorMessage.value = resolveErrorMessage(error);
   } finally {
@@ -97,12 +134,15 @@ const handleCreate = async () => {
 
   submitting.value = true;
   try {
-    await createTask({
+    const task = await createTask({
       title: form.title.trim(),
       description: form.description.trim() || null,
       status: form.status,
       dueDate: toApiDate(form.dueDate)
     });
+    if (targetTaskListId.value) {
+      await addTaskToTaskList(targetTaskListId.value, task.id);
+    }
     pushToast('success', t('tasks.feedback.created') as string);
     resetForm();
   } catch (error) {
@@ -110,6 +150,92 @@ const handleCreate = async () => {
     pushToast('error', errorMessage.value);
   } finally {
     submitting.value = false;
+  }
+};
+
+const handleCreateTaskList = async () => {
+  errorMessage.value = '';
+  if (!taskListForm.title.trim()) {
+    errorMessage.value = t('tasks.feedback.taskListTitleRequired') as string;
+    pushToast('error', errorMessage.value);
+    return;
+  }
+
+  listSubmitting.value = true;
+  try {
+    const taskList = await createTaskList({
+      title: taskListForm.title.trim(),
+      description: taskListForm.description.trim() || null
+    });
+    targetTaskListId.value = taskList.id;
+    activeTaskListId.value = taskList.id;
+    await listTaskListTasks(taskList.id);
+    taskListForm.title = '';
+    taskListForm.description = '';
+    pushToast('success', t('tasks.feedback.taskListCreated') as string);
+  } catch (error) {
+    errorMessage.value = resolveErrorMessage(error);
+    pushToast('error', errorMessage.value);
+  } finally {
+    listSubmitting.value = false;
+  }
+};
+
+const handleSelectTaskList = async (taskListId: string) => {
+  activeTaskListId.value = taskListId;
+  errorMessage.value = '';
+  if (taskListId === 'all') return;
+  try {
+    await listTaskListTasks(taskListId);
+  } catch (error) {
+    errorMessage.value = resolveErrorMessage(error);
+    pushToast('error', errorMessage.value);
+  }
+};
+
+const handleDeleteTaskList = async (taskListId: string) => {
+  const approved = await confirm({
+    title: t('tasks.taskLists.confirmDelete.title') as string,
+    message: t('tasks.taskLists.confirmDelete.message') as string,
+    confirmLabel: t('tasks.taskLists.confirmDelete.confirm') as string,
+    cancelLabel: t('tasks.taskLists.confirmDelete.cancel') as string
+  });
+  if (!approved) return;
+
+  try {
+    await deleteTaskList(taskListId);
+    if (activeTaskListId.value === taskListId) activeTaskListId.value = 'all';
+    if (targetTaskListId.value === taskListId) targetTaskListId.value = taskLists.value[0]?.id ?? '';
+    pushToast('success', t('tasks.feedback.taskListDeleted') as string);
+  } catch (error) {
+    errorMessage.value = resolveErrorMessage(error);
+    pushToast('error', errorMessage.value);
+  }
+};
+
+const handleAssignTask = async (taskId: string) => {
+  if (!targetTaskListId.value) return;
+  assigningTaskId.value = taskId;
+  errorMessage.value = '';
+  try {
+    await addTaskToTaskList(targetTaskListId.value, taskId);
+    pushToast('success', t('tasks.feedback.taskAssigned') as string);
+  } catch (error) {
+    errorMessage.value = resolveErrorMessage(error);
+    pushToast('error', errorMessage.value);
+  } finally {
+    assigningTaskId.value = '';
+  }
+};
+
+const handleRemoveFromActiveList = async (taskId: string) => {
+  if (activeTaskListId.value === 'all') return;
+  try {
+    await removeTaskFromTaskList(activeTaskListId.value, taskId);
+    pushToast('success', t('tasks.feedback.taskRemovedFromList') as string);
+  } catch (error) {
+    errorMessage.value = resolveErrorMessage(error);
+    pushToast('error', errorMessage.value);
   }
 };
 
@@ -185,49 +311,102 @@ onMounted(async () => {
 
     <div class="content-grid">
       <section class="panel form-panel">
-        <div class="panel-head">
-          <h2>{{ t('tasks.create.heading') }}</h2>
-          <p>{{ t('tasks.create.subheading') }}</p>
+        <div class="accordion-stack">
+          <details class="accordion-item" open>
+            <summary class="accordion-summary">
+              <span>
+                <strong>{{ t('tasks.create.heading') }}</strong>
+                <small>{{ t('tasks.create.subheading') }}</small>
+              </span>
+            </summary>
+
+            <form class="task-form accordion-content" @submit.prevent="handleCreate">
+              <label>
+                {{ t('tasks.form.title') }}
+                <input v-model="form.title" type="text" maxlength="200" :placeholder="t('tasks.form.titlePlaceholder') as string" />
+              </label>
+
+              <label>
+                {{ t('tasks.form.description') }}
+                <textarea v-model="form.description" rows="4" :placeholder="t('tasks.form.descriptionPlaceholder') as string" />
+              </label>
+
+              <div class="split-fields">
+                <label>
+                  {{ t('tasks.form.status') }}
+                  <select v-model="form.status">
+                    <option v-for="status in statusOptions" :key="status" :value="status">
+                      {{ t(`tasks.status.${status}`) }}
+                    </option>
+                  </select>
+                </label>
+
+                <label>
+                  {{ t('tasks.form.dueDate') }}
+                  <input v-model="form.dueDate" type="datetime-local" />
+                </label>
+              </div>
+
+              <label v-if="taskLists.length">
+                {{ t('tasks.taskLists.addNewTo') }}
+                <select v-model="targetTaskListId">
+                  <option value="">{{ t('tasks.taskLists.withoutList') }}</option>
+                  <option v-for="taskList in taskLists" :key="taskList.id" :value="taskList.id">
+                    {{ taskList.title }}
+                  </option>
+                </select>
+              </label>
+
+              <button type="submit" class="primary" :disabled="submitting">
+                {{ submitting ? t('tasks.create.submitting') : t('tasks.create.submit') }}
+              </button>
+            </form>
+          </details>
+
+          <details class="accordion-item">
+            <summary class="accordion-summary">
+              <span>
+                <strong>{{ t('tasks.taskLists.heading') }}</strong>
+                <small>{{ t('tasks.taskLists.subheading') }}</small>
+              </span>
+            </summary>
+
+            <form class="task-form accordion-content" @submit.prevent="handleCreateTaskList">
+              <label>
+                {{ t('tasks.taskLists.title') }}
+                <input v-model="taskListForm.title" type="text" maxlength="160" :placeholder="t('tasks.taskLists.titlePlaceholder') as string" />
+              </label>
+              <label>
+                {{ t('tasks.taskLists.description') }}
+                <textarea v-model="taskListForm.description" rows="3" :placeholder="t('tasks.taskLists.descriptionPlaceholder') as string" />
+              </label>
+              <button type="submit" class="primary" :disabled="listSubmitting">
+                {{ listSubmitting ? t('tasks.taskLists.creating') : t('tasks.taskLists.create') }}
+              </button>
+            </form>
+          </details>
         </div>
-
-        <form class="task-form" @submit.prevent="handleCreate">
-          <label>
-            {{ t('tasks.form.title') }}
-            <input v-model="form.title" type="text" maxlength="200" :placeholder="t('tasks.form.titlePlaceholder') as string" />
-          </label>
-
-          <label>
-            {{ t('tasks.form.description') }}
-            <textarea v-model="form.description" rows="4" :placeholder="t('tasks.form.descriptionPlaceholder') as string" />
-          </label>
-
-          <div class="split-fields">
-            <label>
-              {{ t('tasks.form.status') }}
-              <select v-model="form.status">
-                <option v-for="status in statusOptions" :key="status" :value="status">
-                  {{ t(`tasks.status.${status}`) }}
-                </option>
-              </select>
-            </label>
-
-            <label>
-              {{ t('tasks.form.dueDate') }}
-              <input v-model="form.dueDate" type="datetime-local" />
-            </label>
-          </div>
-
-          <button type="submit" class="primary" :disabled="submitting">
-            {{ submitting ? t('tasks.create.submitting') : t('tasks.create.submit') }}
-          </button>
-        </form>
       </section>
 
       <section class="panel list-panel">
+        <div class="task-list-tabs" role="tablist" :aria-label="t('tasks.taskLists.heading') as string">
+          <button type="button" role="tab" class="task-list-tab" :aria-selected="activeTaskListId === 'all'" :class="{ active: activeTaskListId === 'all' }" @click="handleSelectTaskList('all')">
+            <span>{{ t('tasks.taskLists.allTasks') }}</span>
+            <strong>{{ tasks.length }}</strong>
+          </button>
+          <div v-for="taskList in taskLists" :key="taskList.id" class="task-list-tab-group">
+            <button type="button" role="tab" class="task-list-tab" :aria-selected="activeTaskListId === taskList.id" :class="{ active: activeTaskListId === taskList.id }" @click="handleSelectTaskList(taskList.id)">
+              <span>{{ taskList.title }}</span>
+              <strong>{{ taskListTasks[taskList.id]?.length ?? 0 }}</strong>
+            </button>
+            <button type="button" class="danger icon-button tab-delete" :aria-label="t('tasks.taskLists.delete') as string" @click="handleDeleteTaskList(taskList.id)">×</button>
+          </div>
+        </div>
+
         <div class="panel-head list-head">
           <div>
-            <h2>{{ t('tasks.list.heading') }}</h2>
-            <p>{{ t('tasks.list.subheading') }}</p>
+            <h2>{{ currentTaskList?.title || t('tasks.list.heading') }}</h2>
+            <p>{{ currentTaskList?.description || t('tasks.list.subheading') }}</p>
           </div>
           <div class="filters">
             <button
@@ -260,6 +439,10 @@ onMounted(async () => {
               <button type="button" class="ghost small" @click="handleQuickStatus(task.id, 'pending')">{{ t('tasks.actions.markPending') }}</button>
               <button type="button" class="ghost small" @click="handleQuickStatus(task.id, 'in_progress')">{{ t('tasks.actions.markInProgress') }}</button>
               <button type="button" class="ghost small" @click="handleQuickStatus(task.id, 'completed')">{{ t('tasks.actions.markCompleted') }}</button>
+              <button v-if="activeTaskListId === 'all' && selectedTargetList" type="button" class="ghost small" :disabled="assigningTaskId === task.id" @click="handleAssignTask(task.id)">
+                {{ assigningTaskId === task.id ? t('tasks.actions.assigning') : t('tasks.actions.assignToList', { list: selectedTargetList.title }) }}
+              </button>
+              <button v-if="activeTaskListId !== 'all'" type="button" class="ghost small" @click="handleRemoveFromActiveList(task.id)">{{ t('tasks.actions.removeFromList') }}</button>
               <NuxtLink :to="`/tasks/${task.id}`" class="ghost small link-button">{{ t('tasks.actions.open') }}</NuxtLink>
               <button type="button" class="danger small" @click="handleDelete(task.id)">{{ t('tasks.actions.delete') }}</button>
             </div>
@@ -368,6 +551,72 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
+.compact-head {
+  margin-top: 0;
+}
+
+.accordion-stack {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.accordion-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.9rem;
+  background: #fff;
+  overflow: hidden;
+}
+
+.accordion-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.accordion-summary::after {
+  content: "+";
+  width: 1.8rem;
+  height: 1.8rem;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #243041;
+  font-weight: 700;
+}
+
+.accordion-item[open] > .accordion-summary::after {
+  content: "-";
+}
+
+.accordion-summary span {
+  min-width: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.accordion-summary strong {
+  color: #111827;
+}
+
+.accordion-summary small {
+  color: #5b6474;
+  line-height: 1.35;
+}
+
+.accordion-content {
+  padding: 0 1rem 1rem;
+}
+
 .task-form,
 .task-list,
 .task-actions {
@@ -392,6 +641,9 @@ button {
 input,
 textarea,
 select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   border: 1px solid #d6deea;
   border-radius: 0.9rem;
   padding: 0.8rem 0.95rem;
@@ -410,7 +662,13 @@ textarea {
 }
 
 .split-fields > label {
+  min-width: 0;
   flex: 1;
+}
+
+.form-panel .split-fields {
+  display: grid;
+  grid-template-columns: 1fr;
 }
 
 .list-head {
@@ -428,7 +686,8 @@ textarea {
 .ghost,
 .primary,
 .danger,
-.link-button {
+.link-button,
+.task-list-tab {
   border: none;
   border-radius: 999px;
   padding: 0.72rem 1rem;
@@ -438,12 +697,14 @@ textarea {
 
 .filter-chip,
 .ghost,
-.link-button {
+.link-button,
+.task-list-tab {
   background: #edf2f7;
   color: #243041;
 }
 
-.filter-chip.active {
+.filter-chip.active,
+.task-list-tab.active {
   background: #1f2937;
   color: #fff;
 }
@@ -457,6 +718,63 @@ textarea {
 .danger {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.divider {
+  height: 1px;
+  margin: 1.3rem 0;
+  background: #e2e8f0;
+}
+
+.task-list-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 1rem;
+}
+
+.task-list-tab-group {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.task-list-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  max-width: 16rem;
+  text-align: left;
+}
+
+.task-list-tab span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-list-tab strong {
+  flex: 0 0 auto;
+}
+
+.task-list-tab-group .task-list-tab {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.tab-delete {
+  margin-left: 1px;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.icon-button {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  flex: 0 0 auto;
 }
 
 .task-card {
@@ -527,6 +845,11 @@ textarea {
   color: #b91c1c;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 @media (max-width: 960px) {
   .content-grid {
     grid-template-columns: 1fr;
@@ -535,7 +858,8 @@ textarea {
   .hero,
   .list-head,
   .task-card,
-  .task-topline {
+  .task-topline,
+  .split-fields {
     display: grid;
   }
 }
